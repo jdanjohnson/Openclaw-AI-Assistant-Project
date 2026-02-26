@@ -441,7 +441,7 @@ VITE_GATEWAY_URL=ws://localhost:18789
 
 ### Local (recommended for personal use)
 
-The quick start guide above runs everything locally. This is the simplest and most private setup.
+The installation guide above runs everything locally. This is the simplest and most private setup.
 
 ### Cloud server (DigitalOcean / VPS)
 
@@ -508,7 +508,7 @@ Contributions are welcome. Here's how to get involved.
 ### Getting started
 
 1. **Fork the repo** and clone your fork
-2. **Set up your environment** — follow the Quick Start above
+2. **Set up your environment** — follow the [Installation](#installation) guide above
 3. **Create a branch** for your feature or fix:
    ```bash
    git checkout -b feature/your-feature-name
