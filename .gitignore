@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dashboard/dist/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Environment variables (contains secrets)
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Package manager locks (optional — uncomment if you want to track them)
+# package-lock.json
+
+# OpenClaw runtime
+.openclaw/

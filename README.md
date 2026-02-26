@@ -1,12 +1,8 @@
 # OpenClaw Productivity Agent
 
-A ready-to-run [OpenClaw](https://openclaw.com/) agent configuration with a dashboard UI, plugins, and skills for **task management** and **email management**. Built on Gmail and Obsidian — no database required. Compatible with **OpenClaw v2026.2.19+**.
+A ready-to-run [OpenClaw](https://openclaw.com/) agent configuration with a dashboard UI, plugins, and skills for **task management** and **email management**. Built on Gmail and Obsidian — no database required. Compatible with **OpenClaw v2026.2.19+**. See the [Changelog](CHANGELOG.md) for version history.
 
 Originally extracted from [Tempo](https://github.com/jdanjohnson/tempo-assistant), a personal AI Chief of Staff system built by [Ja'dan Johnson](https://github.com/jdanjohnson), a designer and technologist focused on human-centered AI. This repo packages the core productivity features into a standalone, configurable starting point that anyone can fork, extend, and make their own.
-
-```
-
-```
 
 ## Screenshots
 
@@ -44,20 +40,32 @@ This repo gives you a complete OpenClaw agent setup out of the box:
 
 ---
 
-## Quick Start
+## Installation
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+
-- [OpenClaw](https://openclaw.com/) installed globally
-- A Gmail account with API access enabled
-- An Obsidian vault (or use the included template)
-- A Google API key (for Gemini)
+| Requirement | Version | Check |
+|---|---|---|
+| [Node.js](https://nodejs.org/) | **v22+** | `node --version` |
+| [npm](https://www.npmjs.com/) | **v10+** | `npm --version` |
+| [OpenClaw](https://openclaw.com/) | **v2026.2.19+** | `openclaw --version` |
+| [Git](https://git-scm.com/) | any | `git --version` |
 
-### 1. Clone and configure
+**Platform integrations (configure after install):**
+
+| Integration | Required? | What it does |
+|---|---|---|
+| Gmail API (OAuth) | Yes — for email management | Triage, label, draft replies |
+| Google API key | Yes — for LLM | Powers the Gemini model |
+| Obsidian vault | Yes — for task management | Markdown-based task storage |
+| Telegram bot | Optional | Mobile heartbeat notifications |
+
+> **New to OpenClaw?** Install it first: `npm install -g openclaw@latest`, then run `openclaw onboard` to walk through initial setup. See the [OpenClaw getting started guide](https://docs.openclaw.ai/getting-started).
+
+### Step 1 — Clone and configure
 
 ```bash
-git clone https://github.com/mad-dog-it/Openclaw-AI-Assistant-Project.git
+git clone https://github.com/jdanjohnson/Openclaw-AI-Assistant-Project.git
 cd Openclaw-AI-Assistant-Project
 cp .env.example .env
 ```
@@ -81,7 +89,9 @@ TELEGRAM_BOT_TOKEN=your-bot-token
 TELEGRAM_CHAT_ID=your-chat-id
 ```
 
-### 2. Set up your Obsidian vault
+> **Tip:** See [Gmail OAuth Setup](#gmail-oauth-setup) below for step-by-step instructions on getting your Gmail credentials.
+
+### Step 2 — Set up your Obsidian vault
 
 Copy the vault template into your Obsidian vault:
 
@@ -95,25 +105,39 @@ This creates:
 - `Follow-Ups.md` — Follow-up tracking file
 - `Projects/` — Project folder
 
-### 3. Install plugin dependencies
+### Step 3 — Install plugin dependencies
 
 ```bash
 cd agent/plugins/core
 npm install
 ```
 
-### 4. Start the agent
+Expected output: `added 57 packages` (no vulnerabilities).
+
+### Step 4 — Start the agent
 
 ```bash
 cd agent
 openclaw gateway
 ```
 
-The agent starts on port `18789` by default.
+The agent starts on port `18789` by default. You should see:
+
+```
+Gateway listening on http://localhost:18789
+```
 
 > **Note (v2026.2.19):** The gateway defaults to `auth.mode: "none"` for local use. If you expose the gateway externally through a reverse proxy, the `trustedProxies` config ensures WebSocket connections aren't rejected with "device identity required" errors. See the [Deployment](#deployment) section.
 
-### 5. Start the dashboard (optional)
+### Step 5 — Verify your setup
+
+```bash
+openclaw doctor
+```
+
+This checks your configuration, model access, plugin loading, and channel connectivity. Fix any warnings before proceeding.
+
+### Step 6 — Start the dashboard (optional)
 
 ```bash
 cd dashboard
@@ -122,6 +146,16 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) to access the command center.
+
+### Step 7 — Test the agent
+
+Once the gateway is running, try these commands via Telegram or the dashboard chat:
+
+- **"list my tasks"** — verify task management works
+- **"triage my inbox"** — verify email management works
+- **"what's due today?"** — verify heartbeat-style checks work
+
+If all three work, your setup is complete.
 
 ---
 
@@ -413,7 +447,7 @@ The quick start guide above runs everything locally. This is the simplest and mo
 
 For always-on heartbeats and Telegram notifications:
 
-1. **Provision a server** — Any Linux VPS with Node.js 18+
+1. **Provision a server** — Any Linux VPS with Node.js 22+
 2. **Clone the repo** and configure `.env`
 3. **Sync your vault** — Use [Obsidian Sync](https://obsidian.md/sync), [Syncthing](https://syncthing.net/), or rsync to keep your vault accessible on the server
 4. **Run as a service**:
@@ -521,10 +555,31 @@ Contributions are welcome. Here's how to get involved.
 
 ### Reporting issues
 
-Open a [GitHub issue](https://github.com/mad-dog-it/Openclaw-AI-Assistant-Project/issues) with:
+Open a [GitHub issue](https://github.com/jdanjohnson/Openclaw-AI-Assistant-Project/issues) with:
 - Steps to reproduce
 - Expected vs actual behavior
 - Your environment (Node version, OS, OpenClaw version — should be v2026.2.19+)
+
+---
+
+## Troubleshooting
+
+Common issues and their solutions. Run `openclaw doctor` first — it catches most configuration problems automatically.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `gateway.auth.mode is required` | OpenClaw < v2026.2.19 | Upgrade: `npm install -g openclaw@latest` |
+| `device identity required` on WebSocket | Missing `trustedProxies` behind reverse proxy | Add your proxy IP to `gateway.trustedProxies` in `openclaw.json` |
+| `Cannot find module '@sinclair/typebox'` | Plugin dependencies not installed | Run `cd agent/plugins/core && npm install` |
+| Dashboard shows "Disconnected" | Gateway not running | Start the gateway: `cd agent && openclaw gateway` |
+| `GOOGLE_API_KEY is not set` | Missing `.env` file | Copy `.env.example` to `.env` and fill in your credentials |
+| Heartbeat not firing | Outside active hours or `HEARTBEAT.md` empty | Check `activeHours` in `openclaw.json` and ensure `HEARTBEAT.md` has content |
+| Gmail labels not created | OAuth credentials invalid | Re-run the [Gmail OAuth Setup](#gmail-oauth-setup) steps |
+| `model not found` error | Model string doesn't match OpenClaw format | Use provider-prefixed format: `google/gemini-2.0-flash`, `openai/gpt-4o-mini` |
+| Fallback models not triggering | API key valid but model overloaded | Fallbacks only trigger on errors, not on slow responses. Check `openclaw doctor` for model status |
+| Plugin tools not registering | Missing `openclaw.plugin.json` manifest | Ensure `agent/plugins/core/openclaw.plugin.json` exists (required by v2026.2.19+) |
+
+For issues not listed here, open a [GitHub issue](https://github.com/jdanjohnson/Openclaw-AI-Assistant-Project/issues) or check the [OpenClaw troubleshooting docs](https://docs.openclaw.ai/troubleshooting).
 
 ---
 
