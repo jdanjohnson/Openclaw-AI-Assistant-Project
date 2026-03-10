@@ -1,8 +1,11 @@
 {
   "name": "openclaw-core-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenClaw core plugin — task management (Obsidian vault) + email management (Gmail labels)",
   "main": "index.ts",
+  "engines": {
+    "node": ">=22.0.0 <24.0.0"
+  },
   "dependencies": {
     "@sinclair/typebox": "^0.34.48",
     "googleapis": "^144.0.0",

@@ -46,10 +46,12 @@ This repo gives you a complete OpenClaw agent setup out of the box:
 
 | Requirement | Version | Check |
 |---|---|---|
-| [Node.js](https://nodejs.org/) | **v22+** | `node --version` |
+| [Node.js](https://nodejs.org/) | **v22 LTS** (v22.x only — see note below) | `node --version` |
 | [npm](https://www.npmjs.com/) | **v10+** | `npm --version` |
 | [OpenClaw](https://openclaw.com/) | **v2026.2.19+** | `openclaw --version` |
 | [Git](https://git-scm.com/) | any | `git --version` |
+
+> **Node.js version:** Use **Node.js v22 LTS** specifically. Node.js v24+ introduces breaking changes to child process handling ([DEP0190](https://nodejs.org/api/deprecations.html#DEP0190)) that cause the QMD memory backend to fail on startup, particularly on Windows. If you see `qmd collection add failed` errors, your Node version is likely too new. Use [nvm](https://github.com/nvm-sh/nvm) (macOS/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows) to manage versions.
 
 **Platform integrations (configure after install):**
 
@@ -126,6 +128,8 @@ The agent starts on port `18789` by default. You should see:
 ```
 Gateway listening on http://localhost:18789
 ```
+
+> **Note:** OpenClaw reads `openclaw.json` from the **current working directory**. There is no `--config` flag. Always `cd` into the `agent/` directory before running `openclaw gateway`.
 
 > **Note (v2026.2.19):** The gateway defaults to `auth.mode: "none"` for local use. If you expose the gateway externally through a reverse proxy, the `trustedProxies` config ensures WebSocket connections aren't rejected with "device identity required" errors. See the [Deployment](#deployment) section.
 
@@ -499,6 +503,13 @@ agent.yourdomain.com {
 >
 > If your reverse proxy runs on a different machine, add its IP to `trustedProxies`.
 
+> **Security: review `openclaw.json` before deploying externally.** The default config is optimized for local development and ships with `auth.mode: "none"`, `allowInsecureAuth: true`, and `dangerouslyDisableDeviceAuth: true`. Before exposing the gateway on a public network or through a reverse proxy, you should:
+> 1. Remove or set `dangerouslyDisableDeviceAuth` to `false` to re-enable device identity verification
+> 2. Set `gateway.auth.mode` to `"token"` and configure `OPENCLAW_GATEWAY_TOKEN`
+> 3. Remove `allowInsecureAuth: true`
+>
+> These settings are safe for `localhost` use but leave the gateway open to unauthenticated connections if exposed externally.
+
 ---
 
 ## Contributing
@@ -568,16 +579,28 @@ Common issues and their solutions. Run `openclaw doctor` first — it catches mo
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `qmd collection add failed` (code 1) | Node.js v24+ breaking change | **Downgrade to Node.js v22 LTS.** v24 changed child process shell handling which breaks the QMD binary. See [Prerequisites](#prerequisites). |
+| WebSocket closes immediately / "closed before connection established" | QMD memory backend failed to initialize | Fix the QMD errors first (usually Node version). The gateway can't handle connections when memory init fails. |
+| `TypeError: Cannot read properties of undefined (reading '0')` | Cascading failure from broken QMD init | Same root cause as above — fix QMD/Node version first. |
 | `gateway.auth.mode is required` | OpenClaw < v2026.2.19 | Upgrade: `npm install -g openclaw@latest` |
 | `device identity required` on WebSocket | Missing `trustedProxies` behind reverse proxy | Add your proxy IP to `gateway.trustedProxies` in `openclaw.json` |
 | `Cannot find module '@sinclair/typebox'` | Plugin dependencies not installed | Run `cd agent/plugins/core && npm install` |
-| Dashboard shows "Disconnected" | Gateway not running | Start the gateway: `cd agent && openclaw gateway` |
-| `GOOGLE_API_KEY is not set` | Missing `.env` file | Copy `.env.example` to `.env` and fill in your credentials |
+| Dashboard shows "Disconnected" | Gateway not running or still starting | Start the gateway first: `cd agent && openclaw gateway`. Wait for "listening on" before opening the dashboard. |
+| `GOOGLE_API_KEY is not set` | Missing `.env` file | Copy `.env.example` to `.env` and fill in your credentials. Get a free key from [Google AI Studio](https://aistudio.google.com/apikey). |
+| `DeprecationWarning [DEP0190]` in console | Node.js v24+ deprecation | Downgrade to Node.js v22 LTS. This warning indicates the QMD child process spawning is affected. |
 | Heartbeat not firing | Outside active hours or `HEARTBEAT.md` empty | Check `activeHours` in `openclaw.json` and ensure `HEARTBEAT.md` has content |
 | Gmail labels not created | OAuth credentials invalid | Re-run the [Gmail OAuth Setup](#gmail-oauth-setup) steps |
 | `model not found` error | Model string doesn't match OpenClaw format | Use provider-prefixed format: `google/gemini-2.0-flash`, `openai/gpt-4o-mini` |
 | Fallback models not triggering | API key valid but model overloaded | Fallbacks only trigger on errors, not on slow responses. Check `openclaw doctor` for model status |
 | Plugin tools not registering | Missing `openclaw.plugin.json` manifest | Ensure `agent/plugins/core/openclaw.plugin.json` exists (required by v2026.2.19+) |
+| Can't specify config file path | OpenClaw has no `--config` flag | `cd` into the directory containing `openclaw.json` before running `openclaw gateway` |
+
+### Windows-Specific Notes
+
+- **Use Node.js v22 LTS** — Node v24 causes QMD failures on Windows due to `DEP0190` (child process shell option changes).
+- **Terminal encoding** — If you see garbled characters in QMD error messages, run `chcp 65001` in your terminal before starting the gateway to set UTF-8 encoding.
+- **Paths** — Windows paths with spaces may cause issues. Install the project in a path without spaces (e.g., `C:\Projects\Openclaw-AI-Assistant-Project` rather than `C:\My Projects\...`).
+- **Gateway URL** — Use `ws://127.0.0.1:18789` instead of `ws://localhost:18789` in your dashboard `.env` if you encounter IPv6 resolution issues.
 
 For issues not listed here, open a [GitHub issue](https://github.com/jdanjohnson/Openclaw-AI-Assistant-Project/issues) or check the [OpenClaw troubleshooting docs](https://docs.openclaw.ai/troubleshooting).
 

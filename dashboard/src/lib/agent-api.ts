@@ -17,6 +17,9 @@ const connection: AgentConnection = {
 }
 
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
+const MAX_RECONNECT_DELAY = 30000
+const BASE_RECONNECT_DELAY = 2000
 
 export function connectToAgent(
   gatewayUrl: string,
@@ -26,17 +29,36 @@ export function connectToAgent(
   connection.onMessage = onMessage
   connection.onStatusChange = onStatusChange
 
+  function getReconnectDelay(): number {
+    const delay = Math.min(
+      BASE_RECONNECT_DELAY * Math.pow(1.5, reconnectAttempts),
+      MAX_RECONNECT_DELAY
+    )
+    return delay
+  }
+
   function connect() {
     if (connection.ws) {
-      connection.ws.close()
+      try { connection.ws.close() } catch { /* ignore */ }
     }
 
-    const ws = new WebSocket(gatewayUrl)
+    let ws: WebSocket
+    try {
+      ws = new WebSocket(gatewayUrl)
+    } catch (err) {
+      console.error('[agent-api] Failed to create WebSocket:', err)
+      onStatusChange(false)
+      reconnectTimer = setTimeout(connect, getReconnectDelay())
+      reconnectAttempts++
+      return
+    }
     connection.ws = ws
 
     ws.onopen = () => {
       connection.connected = true
+      reconnectAttempts = 0
       onStatusChange(true)
+      console.log('[agent-api] Connected to gateway')
     }
 
     ws.onmessage = (event) => {
@@ -52,14 +74,21 @@ export function connectToAgent(
       }
     }
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      const wasConnected = connection.connected
       connection.connected = false
       onStatusChange(false)
-      reconnectTimer = setTimeout(connect, 3000)
+      if (wasConnected) {
+        console.log('[agent-api] Connection closed (code:', event.code, '). Reconnecting...')
+      } else {
+        console.log('[agent-api] Connection failed. Gateway may not be running. Retrying in', Math.round(getReconnectDelay() / 1000), 's...')
+      }
+      reconnectTimer = setTimeout(connect, getReconnectDelay())
+      reconnectAttempts++
     }
 
     ws.onerror = () => {
-      ws.close()
+      // onclose will fire after this — don't double-handle
     }
   }
 
@@ -67,9 +96,12 @@ export function connectToAgent(
 
   return () => {
     if (reconnectTimer) clearTimeout(reconnectTimer)
-    if (connection.ws) connection.ws.close()
+    if (connection.ws) {
+      try { connection.ws.close() } catch { /* ignore */ }
+    }
     connection.ws = null
     connection.connected = false
+    reconnectAttempts = 0
   }
 }
 

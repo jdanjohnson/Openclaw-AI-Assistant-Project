@@ -48,7 +48,7 @@ function getVaultConfig(): VaultConfig {
   const vaultPath = process.env.VAULT_PATH;
   if (!vaultPath) {
     throw new Error(
-      "VAULT_PATH environment variable is required. Set it to your Obsidian vault path."
+      "VAULT_PATH environment variable is required. Set it in your .env file to your Obsidian vault path (e.g., VAULT_PATH=/Users/you/Documents/MyVault)."
     );
   }
   return getDefaultVaultConfig(vaultPath);
@@ -60,8 +60,14 @@ function getGmailAdapter() {
   const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
 
   if (!clientId || !clientSecret || !refreshToken) {
+    const missing = [
+      !clientId && "GMAIL_CLIENT_ID",
+      !clientSecret && "GMAIL_CLIENT_SECRET",
+      !refreshToken && "GMAIL_REFRESH_TOKEN",
+    ].filter(Boolean);
     throw new Error(
-      "Gmail credentials not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN."
+      `Gmail credentials not configured. Missing: ${missing.join(", ")}. ` +
+      "Set these in your .env file. See the Gmail OAuth Setup section in README.md for instructions."
     );
   }
 
@@ -426,7 +432,7 @@ export default function corePlugin(api: PluginApi) {
               const apiKey = process.env.GOOGLE_API_KEY;
               if (!apiKey)
                 throw new Error(
-                  "GOOGLE_API_KEY not set. Required for email categorization."
+                  "GOOGLE_API_KEY not set. Get a free key from https://aistudio.google.com/apikey and add it to your .env file."
                 );
               const resp = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,

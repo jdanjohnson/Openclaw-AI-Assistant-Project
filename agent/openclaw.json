@@ -1,7 +1,7 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.2.19",
-    "lastTouchedAt": "2026-02-26T00:00:00.000Z"
+    "lastTouchedVersion": "2026.3.7",
+    "lastTouchedAt": "2026-03-10T00:00:00.000Z"
   },
   "memory": {
     "backend": "qmd",
@@ -86,6 +86,7 @@
     "controlUi": {
       "enabled": true,
       "allowInsecureAuth": true,
+      "dangerouslyDisableDeviceAuth": true,
       "allowedOrigins": [
         "http://localhost:5173"
       ]
