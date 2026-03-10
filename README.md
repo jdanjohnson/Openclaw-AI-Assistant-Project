@@ -503,6 +503,13 @@ agent.yourdomain.com {
 >
 > If your reverse proxy runs on a different machine, add its IP to `trustedProxies`.
 
+> **Security: review `openclaw.json` before deploying externally.** The default config is optimized for local development and ships with `auth.mode: "none"`, `allowInsecureAuth: true`, and `dangerouslyDisableDeviceAuth: true`. Before exposing the gateway on a public network or through a reverse proxy, you should:
+> 1. Remove or set `dangerouslyDisableDeviceAuth` to `false` to re-enable device identity verification
+> 2. Set `gateway.auth.mode` to `"token"` and configure `OPENCLAW_GATEWAY_TOKEN`
+> 3. Remove `allowInsecureAuth: true`
+>
+> These settings are safe for `localhost` use but leave the gateway open to unauthenticated connections if exposed externally.
+
 ---
 
 ## Contributing
